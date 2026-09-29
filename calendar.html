@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RITSA | Calendar</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="./assets/css/style.css">
+<style>
+  .cal-panel{padding:20px;}
+  .cal-toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
+  .cal-nav{display:flex; align-items:center; gap:12px;}
+  .cal-nav-btn{width:32px; height:32px; border-radius:8px; border:1px solid var(--border-c); background:#fff; color:var(--text-dark); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .15s;}
+  .cal-nav-btn:hover{background:#F8FAFC;}
+  .cal-month-label{font-size:15px; font-weight:700; color:var(--text-dark); min-width:120px; text-align:center;}
+  .cal-today-btn{border:1px solid var(--border-c); background:#fff; color:var(--text-dark); font-size:12.5px; font-weight:600; padding:7px 16px; border-radius:8px; cursor:pointer; transition:background .15s;}
+  .cal-today-btn:hover{background:#F8FAFC;}
+  .cal-panel *{box-sizing:border-box;}
+  .cal-weekday-row{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px;}
+  .cal-weekday-row div{text-align:center; font-size:11.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.03em; padding-bottom:6px;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:1fr; gap:6px;}
+  .cal-day{border:1px solid var(--border-c); border-radius:10px; min-height:92px; padding:8px; background:#fff; display:flex; flex-direction:column; align-items:stretch; gap:4px; overflow:hidden;}
+  .cal-day.other-month{background:#FAFBFC; border-color:transparent;}
+  .cal-day.today{border-color:var(--sidebar-active-dk); background:#EFF6FF;}
+  .cal-day-num{font-size:12.5px; font-weight:700; color:var(--text-dark);}
+  .cal-day.today .cal-day-num{color:var(--sidebar-active-dk);}
+  .cal-event-chip{font-size:10.5px; font-weight:600; padding:3px 6px; border-radius:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:4px;}
+  .cal-event-dot{width:5px; height:5px; border-radius:50%; flex-shrink:0;}
+  .cal-legend{display:flex; flex-wrap:wrap; gap:14px; margin-top:16px; padding-top:14px; border-top:1px solid var(--border-c);}
+  .cal-legend-item{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-muted);}
+  .cal-legend-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .upcoming-list{display:flex; flex-direction:column; gap:10px; padding:16px 20px;}
+  .upcoming-item{display:flex; align-items:center; gap:12px;}
+  .upcoming-date{width:46px; height:46px; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;}
+  .upcoming-date .d{font-size:15px; font-weight:800; line-height:1.1;}
+  .upcoming-date .m{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+  .upcoming-title{font-size:13px; font-weight:600; color:var(--text-dark); line-height:1.3;}
+  .upcoming-sub{font-size:11.5px; color:var(--text-muted); margin-top:2px;}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- backdrop for mobile -->
+  <div class="backdrop" id="backdrop"></div>
+
+  <!-- RAIL NAV — full-height side menu, positioned to the left of the header -->
+  <nav class="rail" id="rail">
+    <div class="rail-brand">
+      <button class="rail-brand-mark rail-toggle-btn" id="railToggleBtn" type="button" title="Collapse submenu" aria-label="Collapse submenu" aria-expanded="true">
+        <i class="bi bi-chevron-double-left"></i>
+      </button>
+    </div>
+    <div class="rail-nav">
+      <a class="rail-link active" data-menu="Dashboard" title="Dashboard"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
+      <a class="rail-link" data-menu="Masters" title="Masters"><i class="bi bi-archive"></i><span>Masters</span></a>
+      <a class="rail-link" data-menu="Procurement" title="Procurement"><i class="bi bi-cart3"></i><span>Procurement</span></a>
+      <a class="rail-link" data-menu="Goods Receipt" title="Goods Receipt"><i class="bi bi-box-seam"></i><span>Goods Receipt</span></a>
+      <a class="rail-link" data-menu="Quality Management" title="Quality Management"><i class="bi bi-eyedropper"></i><span>Quality Control</span></a>
+      <a class="rail-link" data-menu="Production" title="Production"><i class="bi bi-diagram-3"></i><span>Production</span></a>
+      <a class="rail-link" data-menu="Warehouse" title="Warehouse"><i class="bi bi-shield-check"></i><span>Warehouse</span></a>
+      <a class="rail-link" data-menu="Finished Goods" title="Finished Goods"><i class="bi bi-capsule"></i><span>Finished Goods</span></a>
+      <a class="rail-link" data-menu="Sales &amp; Dispatch" title="Sales & Dispatch"><i class="bi bi-graph-up-arrow"></i><span>Sales &amp; Dispatch</span></a>
+      <a class="rail-link" data-menu="Reports &amp; Analytics" title="Reports & Analytics"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a>
+      <!-- <a class="rail-link" data-menu="Workflow &amp; Approvals" title="Workflow & Approvals"><i class="bi bi-check2-square"></i><span>Workflow</span></a> -->
+      <a class="rail-link" data-menu="Compliance" title="Compliance"><i class="bi bi-patch-check"></i><span>Compliance</span></a>
+      <a class="rail-link" data-menu="Administration" title="Administration"><i class="bi bi-people"></i><span>Admin</span></a>
+    </div>
+  </nav>
+
+  <!-- MAIN COLUMN — everything to the right of the side menu: header on top,
+       submenu + content flowing below it -->
+  <div class="main-col">
+
+  <!-- TOPBAR (header sits to the right of the side menu) -->
+  <header class="topbar">
+    <button class="mobile-toggle" id="mobileToggleBtn"><i class="bi bi-list"></i></button>
+    <div class="topbar-brand">
+      <div class="topbar-logo">
+        <img src="./assets/images/logo.png" alt="Logo">
+      </div>
+    </div>
+    <!-- <div class="search-wrap">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search for modules, masters, transactions...">
+      <span class="kbd-hint">Ctrl + K</span>
+    </div> -->
+    <div class="topbar-actions">
+      <div class="dropdown tb-icon" id="notifDropdownWrap">
+        <a class="tb-icon-toggle" href="#" role="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+          <i class="bi bi-bell"></i>
+          <span class="badge-dot">2</span>
+          <span class="lbl">Notifications</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end notif-dropdown" aria-labelledby="notifDropdown">
+          <div class="notif-head">
+            <h6 class="m-0">Notifications</h6>
+            <a href="#" class="notif-mark">Mark all read</a>
+          </div>
+          <div class="notif-divider"></div>
+          <a class="notif-item unread" href="#">
+            <span class="notif-ic" style="background:linear-gradient(135deg,var(--accent-teal),var(--accent-teal-dk));"><i class="bi bi-box-seam"></i></span>
+            <div class="notif-body">
+              <div class="notif-title">Low stock alert: Paracetamol IP</div>
+              <div class="notif-sub">Raw material below minimum threshold (250 KG remaining)</div>
+              <div class="notif-time">10 min ago</div>
+            </div>
+            <span class="notif-dot"></span>
+          </a>
+          <a class="notif-item unread" href="#">
+            <span class="notif-ic" style="background:linear-gradient(135deg,var(--accent-purple),var(--accent-purple-dk));"><i class="bi bi-eyedropper"></i></span>
+            <div class="notif-body">
+              <div class="notif-title">QC sample pending review</div>
+              <div class="notif-sub">Batch B240602 - Amoxicillin 250mg awaiting approval</div>
+              <div class="notif-time">1 hour ago</div>
+            </div>
+            <span class="notif-dot"></span>
+          </a>
+          <div class="notif-divider"></div>
+          <a href="./notifications.html" class="notif-foot">View all notifications <i class="bi bi-arrow-right"></i></a>
+        </div>
+      </div>
+      <!-- <div class="tb-icon">
+        <i class="bi bi-card-checklist"></i>
+        <span class="badge-dot" style="background:var(--accent-orange)">6</span>
+        <span class="lbl">Tasks</span>
+      </div> -->
+      <div class="tb-icon">
+        <i class="bi bi-question-circle"></i>
+        <span class="lbl">Help</span>
+      </div>
+      <!-- <div class="tb-icon">
+        <i class="bi bi-gear"></i>
+        <span class="lbl">Settings</span>
+      </div> -->
+      <div class="dropdown tb-user-wrap">
+        <a class="tb-user dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <div class="profile-pic">
+            <i class="bi bi-person-circle"></i>
+          </div>
+          <div>
+            <div class="name">Shailendra Singh</div>
+            <div class="role">Chief Operating Officer</div>
+          </div>
+          <i class="bi bi-chevron-down text-muted d-none d-sm-inline" style="font-size:12px;"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end user-dropdown" aria-labelledby="userDropdown">
+          <li><a class="dropdown-item" href="#"><i class="bi bi-person-circle"></i> My Account</a></li>
+          <!-- <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li> -->
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- Everything below the header: submenu panel, main content -->
+  <div class="body-row">
+
+  <!-- MASTERS / SUBMENU PANEL — always visible/sticky alongside the rail -->
+  <aside class="masters-panel" id="mastersPanel">
+    <div class="masters-panel-inner">
+    <div class="d-flex align-items-center">
+      <h6 class="title mb-0" id="panelTitle">Dashboard</h6>
+      <button class="masters-close" id="mastersCloseBtn"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <!-- <div class="masters-search">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search...">
+    </div> -->
+
+    <ul class="masters-list" data-menu="Dashboard">
+      <li class="master-item"><a class="m-row" href="./index.html"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Overview</a></li>
+      <li class="master-item"><a class="m-row" href="./kpi-dashboard.html"><span class="m-ic"><i class="bi bi-bar-chart-line"></i></span>KPI Dashboard</a></li>
+      <li class="master-item"><a class="m-row" href="./notifications.html"><span class="m-ic"><i class="bi bi-bell"></i></span>Notifications</a></li>
+      <li class="master-item"><a class="m-row active-sub" href="./calendar.html"><span class="m-ic"><i class="bi bi-calendar3"></i></span>Calendar</a></li>
+      <!-- <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-clock-history"></i></span>Recent Activities</div></li> -->
+    </ul>
+
+    <ul class="masters-list" data-menu="Masters" style="display:none">
+      <li class="master-item"><a class="m-row" href="./organization.html"><span class="m-ic"><i class="bi bi-building"></i></span>Organization</a></li>
+      <li class="master-item"><a class="m-row" href="./plants-facilities.html"><span class="m-ic"><i class="bi bi-buildings"></i></span>Plants &amp; Facilities</a></li>
+      <li class="master-item"><a class="m-row" href="./warehouse.html"><span class="m-ic"><i class="bi bi-house-gear"></i></span>Warehouse</a></li>
+      <li class="master-item"><a class="m-row" href="./storage-locations.html"><span class="m-ic"><i class="bi bi-geo-alt"></i></span>Storage Locations</a></li>
+      <li class="master-item"><a class="m-row" href="./material-master.html"><span class="m-ic"><i class="bi bi-box"></i></span>Material Master</a></li>
+      <li class="master-item"><a class="m-row" href="./product-master.html"><span class="m-ic"><i class="bi bi-capsule"></i></span>Product Master</a></li>
+      <li class="master-item"><a class="m-row" href="./bill-of-materials.html"><span class="m-ic"><i class="bi bi-diagram-3"></i></span>Bill of Materials (BOM)</a></li>
+      <li class="master-item"><a class="m-row" href="./recipes-formulas.html"><span class="m-ic"><i class="bi bi-journal-text"></i></span>Recipes / Formulas</a></li>
+      <!-- <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-people"></i></span>Business Partners</div></li> -->
+      <li class="master-item"><a class="m-row" href="./vendors.html"><span class="m-ic"><i class="bi bi-truck"></i></span>Vendors</a></li>
+      <li class="master-item"><a class="m-row" href="./customers.html"><span class="m-ic"><i class="bi bi-person-badge"></i></span>Customers</a></li>
+      <!-- <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-person-vcard"></i></span>Employees</div></li> -->
+      <li class="master-item"><a class="m-row" href="./unit-of-measure.html"><span class="m-ic"><i class="bi bi-rulers"></i></span>Unit of Measure (UOM)</a></li>
+      <li class="master-item"><a class="m-row" href="./tax-configuration.html"><span class="m-ic"><i class="bi bi-percent"></i></span>Tax Configuration</a></li>
+      <li class="master-item"><a class="m-row" href="./currency.html"><span class="m-ic"><i class="bi bi-coin"></i></span>Currency</a></li>
+      <li class="master-item"><a class="m-row" href="./batch-numbering.html"><span class="m-ic"><i class="bi bi-upc"></i></span>Batch Numbering</a></li>
+      <li class="master-item"><a class="m-row" href="./document-numbering.html"><span class="m-ic"><i class="bi bi-hash"></i></span>Document Numbering</a></li>
+      <!-- <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-sliders"></i></span>System Configuration</div></li> -->
+    </ul>
+
+    <ul class="masters-list" data-menu="Procurement" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-file-earmark-plus"></i></span>Purchase Requisition</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-file-earmark-text"></i></span>Request for Quotation (RFQ)</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-file-earmark-ruled"></i></span>Vendor Quotation</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-bar-chart-steps"></i></span>Quotation Comparison</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-cart-check"></i></span>Purchase Order</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-journal-bookmark"></i></span>Purchase Contract</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-cash-coin"></i></span>Vendor Advance</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-receipt"></i></span>Purchase Invoice</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-receipt-cutoff"></i></span>Debit Note</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-return-left"></i></span>Vendor Returns</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Procurement Dashboard</div></li>
+    </ul>
+
+    <ul class="masters-list" data-menu="Goods Receipt" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-clipboard-check"></i></span>Goods Receipt Note (GRN)</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-box-arrow-in-down"></i></span>Material Receipt</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-upc-scan"></i></span>Batch Creation</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-tag"></i></span>Label Printing</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-upc"></i></span>Barcode Generation</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-hourglass-split"></i></span>Pending Receipts</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-return-left"></i></span>Supplier Returns</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Receipt Dashboard</div></li>
+    </ul>
+
+    <ul class="masters-list" data-menu="Quality Management" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-shield-check"></i></span>Incoming Quality Inspection</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-droplet"></i></span>Sampling</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-file-earmark-medical"></i></span>Test Requests</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-clipboard-data"></i></span>Test Results</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-file-earmark-text"></i></span>Certificate of Analysis (COA)</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-gear-wide-connected"></i></span>In-Process Quality</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-patch-check"></i></span>Final Product Quality</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-check2-circle"></i></span>Batch Release</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-thermometer-half"></i></span>Stability Studies</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-exclamation-triangle"></i></span>Deviations</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-tools"></i></span>CAPA</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-repeat"></i></span>Change Control</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-exclamation-octagon"></i></span>OOS / OOT</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Quality Dashboard</div></li>
+    </ul>
+
+    <ul class="masters-list" data-menu="Production" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-calendar3"></i></span>Production Planning</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-diagram-2"></i></span>Material Requirement Planning (MRP)</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-calendar-week"></i></span>Production Schedule</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-file-earmark-text"></i></span>Production Order</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-journal-bookmark"></i></span>Batch Manufacturing Record (BMR)</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-box-arrow-up"></i></span>Material Issue</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-cpu"></i></span>Process Execution</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-search"></i></span>In-Process Inspection</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-gear"></i></span>Machine Allocation</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-droplet-half"></i></span>Equipment Cleaning</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-check2-square"></i></span>Line Clearance</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-journal-richtext"></i></span>Batch Packaging Record (BPR)</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-percent"></i></span>Yield Calculation</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-flag"></i></span>Production Completion</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-counterclockwise"></i></span>Rework</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-trash3"></i></span>Scrap Management</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-archive-fill"></i></span>Batch Closure</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Production Dashboard</div></li>
+    </ul>
+
+    <ul class="masters-list" data-menu="Warehouse" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-boxes"></i></span>Raw Material Inventory</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-box"></i></span>WIP Inventory</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-box-seam"></i></span>Finished Goods Inventory</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-upc"></i></span>Batch Management</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-grid-3x3-gap"></i></span>Bin Management</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-left-right"></i></span>Stock Transfer</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-sliders"></i></span>Stock Adjustment</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-repeat"></i></span>Cycle Count</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-clipboard-data"></i></span>Physical Stock Verification</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-cash-stack"></i></span>Inventory Valuation</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-hourglass-split"></i></span>Expiry Management</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-hourglass-bottom"></i></span>Near Expiry Stock</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Warehouse Dashboard</div></li>
+    </ul>
+
+    <ul class="masters-list" data-menu="Finished Goods" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-box-arrow-in-down"></i></span>Finished Goods Receipt</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-check2-circle"></i></span>Product Release</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-tag"></i></span>Labeling &amp; Coding</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-upc-scan"></i></span>Serialization</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-stack"></i></span>Palletization</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-fingerprint"></i></span>Batch Traceability</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-left-right"></i></span>Finished Goods Transfer</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-pause-circle"></i></span>Hold / Release</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Finished Goods Dashboard</div></li>
+    </ul>
+
+    <ul class="masters-list" data-menu="Sales &amp; Dispatch" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-cart-check"></i></span>Sales Order</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-truck"></i></span>Delivery Order</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-list-check"></i></span>Pick List</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-box"></i></span>Packing</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-send"></i></span>Shipment</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-receipt"></i></span>Invoice</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-return-left"></i></span>Customer Returns</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-geo"></i></span>Logistics Tracking</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-journal-text"></i></span>Dispatch Register</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Dispatch Dashboard</div></li>
+    </ul>
+
+    <ul class="masters-list" data-menu="Reports &amp; Analytics" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-bar-chart-line"></i></span>Executive Dashboard</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-boxes"></i></span>Inventory Reports</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-cart3"></i></span>Procurement Reports</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-diagram-3"></i></span>Production Reports</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-patch-check"></i></span>Quality Reports</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-shield-check"></i></span>Warehouse Reports</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-truck"></i></span>Dispatch Reports</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-fingerprint"></i></span>Batch Traceability</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-hourglass-split"></i></span>Expiry Reports</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-shield-lock"></i></span>Audit Reports</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-person-lines-fill"></i></span>User Activity</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-sliders"></i></span>Custom Reports</div></li>
+    </ul>
+
+    <!-- <ul class="masters-list" data-menu="Workflow &amp; Approvals" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-inbox"></i></span>Approval Inbox</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-hourglass-split"></i></span>Pending Approvals</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-diagram-3"></i></span>Workflow Designer</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-up-circle"></i></span>Escalation Rules</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-envelope"></i></span>Email Notifications</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-clock-history"></i></span>Approval History</div></li>
+    </ul> -->
+
+    <ul class="masters-list" data-menu="Compliance" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-shield-lock"></i></span>Audit Trail</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-pen"></i></span>Electronic Signatures</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-folder"></i></span>Document Management</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-file-earmark-text"></i></span>SOP Management</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-file-earmark-check"></i></span>Validation Documents</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-globe"></i></span>Regulatory Compliance</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-exclamation-octagon"></i></span>Recall Management</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-speedometer2"></i></span>Compliance Dashboard</div></li>
+    </ul>
+
+    <ul class="masters-list" data-menu="Administration" style="display:none">
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-people"></i></span>User Management</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-shield-lock"></i></span>Roles &amp; Permissions</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-list-check"></i></span>Menu Access</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-diagram-2"></i></span>Approval Matrix</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-building"></i></span>Organization Settings</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-calendar3"></i></span>Fiscal Year</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-hash"></i></span>Number Series</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-envelope"></i></span>Email Templates</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-bell"></i></span>Notification Settings</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-cloud-arrow-up"></i></span>Backup &amp; Restore</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-journal-text"></i></span>Audit Logs</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-plug"></i></span>API Integration</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-arrow-down-up"></i></span>Import / Export</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-heart-pulse"></i></span>System Health</div></li>
+      <li class="master-item"><div class="m-row"><span class="m-ic"><i class="bi bi-gear"></i></span>Application Settings</div></li>
+    </ul>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-wrap">
+
+    <!-- CONTENT -->
+    <main class="content-area">
+
+      <!-- Page head -->
+      <div class="page-head">
+        <div>
+          <!-- <div class="welcome">Dashboard</div> -->
+          <h1 class="brand-font">Calendar</h1>
+          <!-- <div class="sub">Production, quality, procurement and finance events across the organization.</div> -->
+        </div>
+        <a class="btn-customize" href="./add-event.html">
+          <i class="bi bi-plus-lg"></i> Add Event
+        </a>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-xl-8">
+          <div class="panel-card cal-panel">
+            <div class="cal-toolbar">
+              <div class="cal-nav">
+                <button type="button" class="cal-nav-btn" id="calPrevBtn"><i class="bi bi-chevron-left"></i></button>
+                <span class="cal-month-label">July 2026</span>
+                <button type="button" class="cal-nav-btn" id="calNextBtn"><i class="bi bi-chevron-right"></i></button>
+              </div>
+              <button type="button" class="cal-today-btn" id="calTodayBtn">Today</button>
+            </div>
+            <div class="cal-weekday-row">
+              <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+            </div>
+            <div class="cal-grid" id="calGrid">
+          <div class="cal-day other-month"></div>
+          <div class="cal-day other-month"></div>
+          <div class="cal-day other-month"></div>
+          <div class="cal-day" data-day="1">
+              <div class="cal-day-num">1</div>
+              </div>
+          <div class="cal-day" data-day="2">
+              <div class="cal-day-num">2</div>
+              <div class="cal-event-chip" style="background:#F973161A;color:#F97316;" title="Batch B240610 Production Start"><span class="cal-event-dot" style="background:#F97316;"></span>Batch B240610 Production Start</div>
+              </div>
+          <div class="cal-day" data-day="3">
+              <div class="cal-day-num">3</div>
+              <div class="cal-event-chip" style="background:#EC48991A;color:#EC4899;" title="Vendor Payment Due – Sterling Packaging"><span class="cal-event-dot" style="background:#EC4899;"></span>Vendor Payment Due – Sterling Packaging</div>
+              </div>
+          <div class="cal-day" data-day="4">
+              <div class="cal-day-num">4</div>
+              </div>
+          <div class="cal-day" data-day="5">
+              <div class="cal-day-num">5</div>
+              </div>
+          <div class="cal-day" data-day="6">
+              <div class="cal-day-num">6</div>
+              <div class="cal-event-chip" style="background:#7C5CFC1A;color:#7C5CFC;" title="QC Audit – Amoxicillin Line"><span class="cal-event-dot" style="background:#7C5CFC;"></span>QC Audit – Amoxicillin Line</div>
+              </div>
+          <div class="cal-day" data-day="7">
+              <div class="cal-day-num">7</div>
+              </div>
+          <div class="cal-day" data-day="8">
+              <div class="cal-day-num">8</div>
+              <div class="cal-event-chip" style="background:#EF44441A;color:#EF4444;" title="Equipment Maintenance – Compression Machine #3"><span class="cal-event-dot" style="background:#EF4444;"></span>Equipment Maintenance – Compression Machine #3</div>
+              </div>
+          <div class="cal-day" data-day="9">
+              <div class="cal-day-num">9</div>
+              </div>
+          <div class="cal-day" data-day="10">
+              <div class="cal-day-num">10</div>
+              <div class="cal-event-chip" style="background:#14B8A61A;color:#14B8A6;" title="GRN Expected – Apex Pharma Chemicals"><span class="cal-event-dot" style="background:#14B8A6;"></span>GRN Expected – Apex Pharma Chemicals</div>
+              </div>
+          <div class="cal-day" data-day="11">
+              <div class="cal-day-num">11</div>
+              </div>
+          <div class="cal-day" data-day="12">
+              <div class="cal-day-num">12</div>
+              </div>
+          <div class="cal-day" data-day="13">
+              <div class="cal-day-num">13</div>
+              <div class="cal-event-chip" style="background:#22C55E1A;color:#22C55E;" title="Monthly Stock Reconciliation"><span class="cal-event-dot" style="background:#22C55E;"></span>Monthly Stock Reconciliation</div>
+              </div>
+          <div class="cal-day" data-day="14">
+              <div class="cal-day-num">14</div>
+              </div>
+          <div class="cal-day" data-day="15">
+              <div class="cal-day-num">15</div>
+              <div class="cal-event-chip" style="background:#EC48991A;color:#EC4899;" title="GST Return Filing Due"><span class="cal-event-dot" style="background:#EC4899;"></span>GST Return Filing Due</div>
+              </div>
+          <div class="cal-day" data-day="16">
+              <div class="cal-day-num">16</div>
+              </div>
+          <div class="cal-day" data-day="17">
+              <div class="cal-day-num">17</div>
+              <div class="cal-event-chip" style="background:#F973161A;color:#F97316;" title="Product Launch Review – Vitamin C Effervescent"><span class="cal-event-dot" style="background:#F97316;"></span>Product Launch Review – Vitamin C Effervescent</div>
+              </div>
+          <div class="cal-day" data-day="18">
+              <div class="cal-day-num">18</div>
+              </div>
+          <div class="cal-day" data-day="19">
+              <div class="cal-day-num">19</div>
+              </div>
+          <div class="cal-day" data-day="20">
+              <div class="cal-day-num">20</div>
+              <div class="cal-event-chip" style="background:#2563EB1A;color:#2563EB;" title="Customer Dispatch – MedPlus Pharmacy"><span class="cal-event-dot" style="background:#2563EB;"></span>Customer Dispatch – MedPlus Pharmacy</div>
+              </div>
+          <div class="cal-day" data-day="21">
+              <div class="cal-day-num">21</div>
+              </div>
+          <div class="cal-day" data-day="22">
+              <div class="cal-day-num">22</div>
+              <div class="cal-event-chip" style="background:#7C5CFC1A;color:#7C5CFC;" title="Internal Quality Audit"><span class="cal-event-dot" style="background:#7C5CFC;"></span>Internal Quality Audit</div>
+              </div>
+          <div class="cal-day" data-day="23">
+              <div class="cal-day-num">23</div>
+              </div>
+          <div class="cal-day" data-day="24">
+              <div class="cal-day-num">24</div>
+              <div class="cal-event-chip" style="background:#14B8A61A;color:#14B8A6;" title="Vendor Review Meeting – Global Excipients"><span class="cal-event-dot" style="background:#14B8A6;"></span>Vendor Review Meeting – Global Excipients</div>
+              </div>
+          <div class="cal-day" data-day="25">
+              <div class="cal-day-num">25</div>
+              </div>
+          <div class="cal-day" data-day="26">
+              <div class="cal-day-num">26</div>
+              </div>
+          <div class="cal-day" data-day="27">
+              <div class="cal-day-num">27</div>
+              <div class="cal-event-chip" style="background:#7C5CFC1A;color:#7C5CFC;" title="Batch B240622 QC Release"><span class="cal-event-dot" style="background:#7C5CFC;"></span>Batch B240622 QC Release</div>
+              </div>
+          <div class="cal-day" data-day="28">
+              <div class="cal-day-num">28</div>
+              </div>
+          <div class="cal-day today" data-day="29">
+              <div class="cal-day-num">29</div>
+              <div class="cal-event-chip" style="background:#EC48991A;color:#EC4899;" title="Currency Rate Review"><span class="cal-event-dot" style="background:#EC4899;"></span>Currency Rate Review</div>
+              </div>
+          <div class="cal-day" data-day="30">
+              <div class="cal-day-num">30</div>
+              </div>
+          <div class="cal-day" data-day="31">
+              <div class="cal-day-num">31</div>
+              <div class="cal-event-chip" style="background:#EC48991A;color:#EC4899;" title="Month-End Closing"><span class="cal-event-dot" style="background:#EC4899;"></span>Month-End Closing</div>
+              </div>
+          <div class="cal-day other-month"></div>
+            </div>
+            <div class="cal-legend">
+<span class="cal-legend-item"><span class="cal-legend-dot" style="background:#F97316;"></span>Production</span>
+<span class="cal-legend-item"><span class="cal-legend-dot" style="background:#7C5CFC;"></span>Quality</span>
+<span class="cal-legend-item"><span class="cal-legend-dot" style="background:#14B8A6;"></span>Procurement</span>
+<span class="cal-legend-item"><span class="cal-legend-dot" style="background:#2563EB;"></span>Dispatch</span>
+<span class="cal-legend-item"><span class="cal-legend-dot" style="background:#EC4899;"></span>Finance</span>
+<span class="cal-legend-item"><span class="cal-legend-dot" style="background:#22C55E;"></span>Warehouse</span>
+<span class="cal-legend-item"><span class="cal-legend-dot" style="background:#EF4444;"></span>Maintenance</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-xl-4">
+          <div class="panel-card" style="height:100%;">
+            <div class="panel-head">
+              <h5>Upcoming Events</h5>
+              <span class="range-btn" style="pointer-events:none;"><i class="bi bi-calendar-event"></i> Next 5</span>
+            </div>
+            <div class="upcoming-list" id="upcomingList">
+              <div class="upcoming-item">
+                <div class="upcoming-date" style="color:#EC4899;background:#EC48991A;">
+                  <span class="d">29</span>
+                  <span class="m">Jul</span>
+                </div>
+                <div class="upcoming-body">
+                  <div class="upcoming-title">Currency Rate Review</div>
+                  <div class="upcoming-sub">Today &middot; <span style="color:#EC4899;font-weight:600;">Finance</span></div>
+                </div>
+              </div>
+              <div class="upcoming-item">
+                <div class="upcoming-date" style="color:#EC4899;background:#EC48991A;">
+                  <span class="d">31</span>
+                  <span class="m">Jul</span>
+                </div>
+                <div class="upcoming-body">
+                  <div class="upcoming-title">Month-End Closing</div>
+                  <div class="upcoming-sub">Thu &middot; <span style="color:#EC4899;font-weight:600;">Finance</span></div>
+                </div>
+              </div>
+              <div class="upcoming-item">
+                <div class="upcoming-date" style="color:#F97316;background:#F973161A;">
+                  <span class="d">01</span>
+                  <span class="m">Aug</span>
+                </div>
+                <div class="upcoming-body">
+                  <div class="upcoming-title">Production Planning Meeting</div>
+                  <div class="upcoming-sub">Fri &middot; <span style="color:#F97316;font-weight:600;">Production</span></div>
+                </div>
+              </div>
+              <div class="upcoming-item">
+                <div class="upcoming-date" style="color:#7C5CFC;background:#7C5CFC1A;">
+                  <span class="d">03</span>
+                  <span class="m">Aug</span>
+                </div>
+                <div class="upcoming-body">
+                  <div class="upcoming-title">Batch Record Review – B240630</div>
+                  <div class="upcoming-sub">Sun &middot; <span style="color:#7C5CFC;font-weight:600;">Quality</span></div>
+                </div>
+              </div>
+              <div class="upcoming-item">
+                <div class="upcoming-date" style="color:#14B8A6;background:#14B8A61A;">
+                  <span class="d">05</span>
+                  <span class="m">Aug</span>
+                </div>
+                <div class="upcoming-body">
+                  <div class="upcoming-title">Vendor Onboarding – Coastal Solvents</div>
+                  <div class="upcoming-sub">Tue &middot; <span style="color:#14B8A6;font-weight:600;">Procurement</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <!-- <footer class="app-footer">
+      <span><i class="bi bi-list-ul"></i> Version: 1.0.0</span>
+      <span><i class="bi bi-hdd-network"></i> Environment: Production <span class="status-dot"></span></span>
+      <span><i class="bi bi-clock-history"></i> Last Login: 01-Jun-2024 10:15 AM</span>
+      <span class="grow">© 2024 RITSA. All rights reserved.</span>
+    </footer> -->
+  </div>
+  </div><!-- /.body-row -->
+  </div><!-- /.main-col -->
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="./assets/js/chart.umd.min.js"></script>
+<script src="./assets/js/script.js"></script>
+<script>
+  // Calendar page setup (static demo month; nav buttons are visual placeholders).
+  if (typeof activeMenu !== 'undefined') { activeMenu = 'Dashboard'; initLayout(); }
+
+  document.getElementById('calTodayBtn').addEventListener('click', function(){
+    const todayCell = document.querySelector('.cal-day.today');
+    if (todayCell) {
+      todayCell.scrollIntoView({ behavior:'smooth', block:'center' });
+      todayCell.style.transition = 'box-shadow .3s';
+      todayCell.style.boxShadow = '0 0 0 3px var(--sidebar-active-dk)';
+      setTimeout(() => { todayCell.style.boxShadow = ''; }, 900);
+    }
+  });
+
+  // Merge in any events saved from the standalone "Add Event" page.
+  const CAL_CATS = {'Production':'#F97316', 'Quality':'#7C5CFC', 'Procurement':'#14B8A6', 'Dispatch':'#2563EB', 'Finance':'#EC4899', 'Warehouse':'#22C55E', 'Maintenance':'#EF4444'};
+  const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const savedEvents = JSON.parse(localStorage.getItem('ritsa_events') || '[]');
+  const upcomingList = document.getElementById('upcomingList');
+
+  savedEvents.forEach(ev => {
+    if (!ev.date) return;
+    const color = CAL_CATS[ev.category] || '#2563EB';
+    const [y, m, d] = ev.date.split('-').map(Number);
+
+    // If the event falls within the displayed month (July 2026), add a chip to that day cell.
+    if (y === 2026 && m === 7) {
+      const cell = document.querySelector(`.cal-day[data-day="${d}"]`);
+      if (cell) {
+        const chip = document.createElement('div');
+        chip.className = 'cal-event-chip';
+        chip.style.background = color + '1A';
+        chip.style.color = color;
+        chip.title = ev.title;
+        chip.innerHTML = `<span class="cal-event-dot" style="background:${color};"></span>${ev.title}`;
+        cell.appendChild(chip);
+      }
+    }
+
+    // Always add it to the Upcoming Events list too.
+    const item = document.createElement('div');
+    item.className = 'upcoming-item';
+    item.innerHTML = `
+      <div class="upcoming-date" style="color:${color};background:${color}1A;">
+        <span class="d">${String(d).padStart(2,'0')}</span>
+        <span class="m">${MONTH_ABBR[m-1]}</span>
+      </div>
+      <div class="upcoming-body">
+        <div class="upcoming-title">${ev.title}</div>
+        <div class="upcoming-sub">${ev.time || 'All day'} &middot; <span style="color:${color};font-weight:600;">${ev.category}</span></div>
+      </div>`;
+    upcomingList.appendChild(item);
+  });
+</script>
+</body>
+</html>
